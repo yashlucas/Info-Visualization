@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Map with Timeline</title>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css">
+  <!-- noUiSlider CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css">
+  <!-- Chart.js CSS -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    #map {
+
+      height: 60vh; /* Map height */
+      width: 90vh;
+      left:30px;
+      top:50px;
+    }
+    #timeline-container {
+      padding: 30px;
+      margin: 10px 0;
+      text-align: center;
+
+    }
+    #timeline-slider {
+      margin: 10px;
+      width: 90vh;
+      top:80px;
+    }
+    #filter-container {
+      margin: 10px 0;
+    }
+    #top-painters-container {
+      position: fixed; /* Fixed position to stay on the right */
+      right: 25%; /* Places it 25% from the right edge */
+      top: 200px;
+      z-index: 10;
+ /* Adds 10px of space around all sides of the element */
+  /* Adds spacing to the right */
+margin-bottom: 50px; /* Adds spacing below */
+   /* Adds spacing to the left */
+
+      padding: 20px;
+      border: 1px solid #ddd;
+      width: 350px;
+      height: vh;
+      background-color: #ffffff; /* Add background color for better visibility */
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add a subtle shadow */
+      border-radius: 5px;
+
+    }
+
+    #total-events-container {
+  margin-top: 10px;
+  padding: 10px;             /* Add padding inside the box */
+  border: 2px solid #ddd;    /* Add a light border around the box */
+  background-color: #f9f9f9; /* Add a background color to the box */
+  border-radius: 5px;        /* Optional: Add rounded corners to the box */
+  width:200px;         /* Adjust width to content inside */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle shadow */
+  position: fixed; /* Fixed position to stay on the right */
+    right: 10%; /* Places it 20px from the right edge */
+    top: 350px; 
+}
+    
+#city-name {
+  margin-top: 10px;
+  padding: 10px;             /* Add padding inside the box */
+  border: 2px solid #ddd;    /* Add a light border around the box */
+  background-color: #f9f9f9; /* Add a background color to the box */
+  border-radius: 5px;        /* Optional: Add rounded corners to the box */
+  width:200px;         /* Adjust width to content inside */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle shadow */
+  position: fixed; /* Fixed position to stay on the right */
+    right: 10%; /* Places it 20px from the right edge */
+    top: 200px; 
+}
+#event-counts-group {
+  margin-top: 10px;
+  padding: 10px;             /* Add padding inside the box */
+  border: 2px solid #ddd;    /* Add a light border around the box */
+  background-color: #f9f9f9; /* Add a background color to the box */
+  border-radius: 5px;        /* Optional: Add rounded corners to the box */
+  width:200px;        /* Adjust width to content inside */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle shadow */
+  position: fixed; /* Fixed position to stay on the right */
+    right: 10%; /* Places it 20px from the right edge */
+    top: 500px; 
+}
+#event-counts-solo {
+  margin-top: 10px;
+  padding: 10px;             /* Add padding inside the box */
+  border: 2px solid #ddd;    /* Add a light border around the box */
+  background-color: #f9f9f9; /* Add a background color to the box */
+  border-radius: 5px;        /* Optional: Add rounded corners to the box */
+  width:200px;         /* Adjust width to content inside */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle shadow */
+  position: fixed; /* Fixed position to stay on the right */
+    right: 10%; /* Places it 20px from the right edge */
+    top: 650px; 
+}
+#top-painters-container button {
+  margin: 5px;
+  padding: 10px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#top-painters-container button:hover {
+  background-color: #45a049;
+}
+
+#top-painters-container button[selected] {
+  background-color: #3e8e41; /* Highlight selected button */
+}
+
+
+
+    #selected-year-range {
+      margin-top: 10px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    /* New Style for Pie Chart */
+    #pie-chart {
+
+      width: 450px;
+      height: 450px;
+
+      margin-top: 60px;
+    }
+     /* Basic styling for the tab bar */
+     .tabs {
+  display: flex;
+  justify-content: space-between;
+  background-color: #f1f1f1;
+  padding: 10px;
+ font-size: 16px;
+
+}    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      position: relative;
+      min-height: 100vh; /* Ensures body takes up the full screen height */
+      background-color: #f9f9f9; /* Light background for content */
+    }
+
+    /* Pseudo-element for watermark background */
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('image4.jpg'); /* Replace with your high-res image */
+      background-size: cover; /* Ensures the image covers the entire screen */
+      background-repeat: no-repeat; /* Prevents tiling */
+      background-position: center; /* Centers the image */
+      opacity: 0.2; /* Adjust the transparency of the watermark */
+      z-index: -1; /* Pushes the background behind content */
+    }
+
+
+
+
+/* Common styles for both containers */
+.dropdown-container, #filter-container {
+  position: relative;
+  z-index: 2000;
+  top: 10px; /* Adjust as needed to position both containers equally */
+  display: inline-block;
+  background-color: #f1f1f1;
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 15px;
+}
+
+#filter-container label {
+  font-weight: bold;
+  color: #333;
+  margin-right: 10px; /* Adds space between the label and the dropdown */
+}
+
+/* Dropdown Trigger */
+.dropdown-trigger, #type-filter {
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+
+/* Dropdown content */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: white;
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+  width: 200px;
+  border-radius: 4px;
+  z-index: 2050;
+}
+
+/* Dropdown menu items */
+.dropdown-menu-item {
+  padding: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.dropdown-menu-item:hover, #type-filter:hover {
+  background-color: #f1f1f1;
+}
+
+.dropdown-container:hover .dropdown-content {
+  display: block;
+}
+
+/* Tab Styles */
+.tab {
+  text-decoration: none;
+  color: #333;
+  font-size: 16px;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.tab.active {
+  background-color: #3498db;
+  color: white;
+}
+
+/* Hide Load File Button */
+#loadFileButton {
+  display: none;
+}
+
+
+ 
+</style>
+</head>
+<body>
+  <h1>Exploring 19th-Century U.S. Artists: Visionaries Shaping Creativity</h1>
+  <div class="tabs" id="tabs">
+    <div class="nav-container">
+      <!-- Dropdown menu -->
+      <div class="dropdown-container">
+        <button class="dropdown-trigger">Choose a City</button>
+        <div class="dropdown-content">
+          <div class="dropdown-menu-item">
+            <a class="tab active" href="#" data-file="event_details_Pittsburgh.csv" data-min="1905" data-max="1914">Pittsburgh</a>
+          </div>
+          <div class="dropdown-menu-item">
+            <a class="tab" href="#" data-file="event_details_New_York.csv" data-min="1908" data-max="1915">New York</a>
+          </div>
+          <div class="dropdown-menu-item">
+            <a class="tab" href="#" data-file="event_details_Chicago.csv" data-min="1905" data-max="1913">Chicago</a>
+          </div>
+          <div class="dropdown-menu-item">
+            <a class="tab" href="#" data-file="event_details_Boston.csv" data-min="1913" data-max="1913">Boston</a>
+          </div>
+          <div class="dropdown-menu-item">
+            <a class="tab" href="#" data-file="event_details_Cincinnati.csv" data-min="1905" data-max="1905">Cincinnati</a>
+          </div>
+          <div class="dropdown-menu-item">
+            <a class="tab" href="#" data-file="event_details_Dresden.csv" data-min="1906" data-max="1914">Dresden</a>
+          </div>
+          <div class="dropdown-menu-item">
+            <a class="tab" href="#" data-file="event_details_San_Francisco.csv" data-min="1915" data-max="1915">San Francisco</a>
+          </div>
+        </div>
+      </div>
+
+
+
+  
+  
+  
+<!-- Button to load the selected country's file -->
+<button id="loadFileButton" style="display: none;"></button>
+
+
+
+  <div id="filter-container">
+    <label for="type-filter"></label>
+    <select id="type-filter">
+      <option value="all" disabled selected>Choose Event Type</option>
+      <option value="solo">Solo</option>
+      <option value="group">Group</option>
+    </select>
+  </div>
+</div>
+</div>
+  <div id="map"></div>
+  <div id="timeline-container">
+    <div id="timeline-slider"></div>
+  </div>
+  <!-- Display Selected Year Range -->
+  <!--div id="selected-year-range">Selected Year Range: 1902 - 1915</div-->
+  <style>
+    #total-events-container, #event-counts-solo, #event-counts-group, #city,#city-name {
+      text-align: center; /* Center align text */
+      margin: 20px 0; /* Add spacing between sections */
+    }
+  
+    #total-events-container span, 
+    #event-counts-solo span, 
+    #event-counts-group span,
+    #city-name span {
+      display: block; /* Ensure the numbers appear below the heading */
+      font-size: 2.5rem; /* Increase the font size for prominence */
+      font-weight: bold; /* Make the numbers bold */
+      color: #000; /* Ensure numbers have a strong black color */
+    }
+  
+    h3 {
+      margin-bottom: 10px; /* Add space below headings */
+      font-size: 1.2rem; /* Slightly smaller font size for headings */
+      color: #555; /* Subtle grey for headings */
+    }
+  </style>
+
+  <svg id="timeline" width="600" height="50"></svg>
+
+  <div id="city-name">
+    <h3>Name of the City</h3>
+    <span id="City">N/A </span>
+  </div>
+  <div id="total-events-container">
+    <h3>Total Events:</h3>
+    <span id="total-events">0</span>
+  </div>
+  
+  <div id="event-counts-solo">
+    <h3>Solo Events:</h3>
+    <span id="solo-count">0</span>
+  </div>
+  
+  <div id="event-counts-group">
+    <h3>Group Events:</h3>
+    <span id="group-count">0</span>
+  </div>
+  
+  
+
+  <!-- Dropdown for selecting top N painters -->
+  <div id="top-painters-container">
+    <h3>Frequent Artists:</h3>
+    <p>This is based on the number of time artist who participated in the events. </p>
+    <button class="top-painter-button" data-top="2">Top 2</button>
+    <button class="top-painter-button" data-top="5">Top 5</button>
+    <button class="top-painter-button" data-top="10" selected>Top 10</button>
+    <canvas id="pie-chart"></canvas>
+  </div>
+  
+
+  
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+  <!-- noUiSlider JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.js"></script>
+  <!-- D3.js -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <script>
+    // Initialize map
+   // Initialize map
+// Initialize map
+const map = L.map('map', {
+  center: [0, 0],  // Center the map on (0, 0) (near the equator and prime meridian)
+  zoom: 5,          // Set zoom level to 1 for world view (zoom: 1 should be global)
+  zoomControl: true // Enable zoom control buttons
+});
+
+// Add OpenStreetMap tile layer
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
+const markerCluster = L.markerClusterGroup();
+map.addLayer(markerCluster);
+
+let fullData = []; // To hold the full dataset
+let filteredData = []; // To hold filtered data
+let selectedTopN = 10; // Default Top N painters to 10
+
+// Initialize noUiSlider timeline
+const timelineSlider = document.getElementById('timeline-slider');
+noUiSlider.create(timelineSlider, {
+  start: [1902, 1915], // Initial range
+  connect: true,
+  range: {
+    min: 1902,
+    max: 1915
+  },
+  step: 1,
+  tooltips: [true, true],
+  format: {
+    to: value => Math.round(value),
+    from: value => Math.round(value)
+  }
+});
+
+// Function to update the year range display
+function updateYearRangeDisplay(values) {
+  const yearRangeDisplay = document.getElementById('selected-year-range');
+  yearRangeDisplay.textContent = `Selected Year Range: ${Math.round(values[0])} - ${Math.round(values[1])}`;
+}
+
+// Function to update visualization
+function updateVisualization(data) {
+  markerCluster.clearLayers(); // Clear existing markers
+
+  // Initialize an empty array to hold the marker positions for the bounds
+  const markers = [];
+
+  data.forEach(d => {
+    const marker = L.marker([d['e.latitude'], d['e.longitude']])
+      .bindPopup(`<b>${d['a.name']}</b><br>Year of Event: ${d['e.startdate']}`);
+    markerCluster.addLayer(marker);
+
+    // Add each marker's position to the markers array
+    markers.push([d['e.latitude'], d['e.longitude']]);
+  });
+
+  // Adjust map bounds to fit the markers
+  if (markers.length > 0) {
+    const bounds = L.latLngBounds(markers);
+    map.fitBounds(bounds, { padding: [50, 50] });
+
+    // Check if bounds are too large or small, and adjust zoom level
+    if (map.getZoom() > 15) {
+      map.setZoom(8); // Set a fallback zoom if too close
+    } else if (map.getZoom() < 2) {
+      map.setZoom(2); // Set a fallback zoom if too zoomed out
+    }
+  }
+}
+
+// Function to update the total events count
+function updateTotalEvents(count) {
+  document.getElementById('total-events').textContent = count;
+}
+
+// Function to update the solo/group events count
+function updateSoloGroupCount(soloCount, groupCount) {
+  document.getElementById('solo-count').textContent = soloCount;
+  document.getElementById('group-count').textContent = groupCount;
+}
+
+// Function to update the top N painters in pie chart
+function updatePieChart(data, topN) {
+  const painterCount = {};
+
+  // Count occurrences of each painter's name
+  data.forEach(d => {
+    const painter = d['a.name'];
+    painterCount[painter] = (painterCount[painter] || 0) + 1;
+  });
+
+  // Get the top N painters sorted by their frequency
+  const topPainters = Object.entries(painterCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, topN);
+
+  // Prepare the data for the pie chart
+  const labels = topPainters.map(painter => painter[0]);
+  const values = topPainters.map(painter => painter[1]);
+  const totalEvents = values.reduce((sum, val) => sum + val, 0);
+  // Destroy the existing chart if it exists
+  if (window.pieChartInstance) {
+    window.pieChartInstance.destroy();
+  }
+
+  const ctx = document.getElementById('pie-chart').getContext('2d');
+
+// Prefix to be added before each value
+const prefix = 'Number of events participated: ';
+
+// Modify the labels to include the prefix dynamically
+const updatedLabels = labels.map((label, index) => `${label}`);
+
+
+// Create the pie chart
+window.pieChartInstance = new Chart(ctx, {
+  type: 'doughnut',
+  data: {
+    labels: updatedLabels, // Use the updated labels
+    datasets: [{
+      data: values, // Values remain unchanged
+      backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#FF9F40', '#36F3F2', '#F1C232', '#F29C11', '#54B8FF', '#D441F2'],
+      hoverBackgroundColor: ['#FF4384', '#36A1EB', '#FFAE56', '#4BC0F0', '#FF9F60', '#36F3F3', '#F1D232', '#F2A011', '#54B8F0', '#D441F1']
+    }]
+  },
+        options: {
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function (tooltipItem) {
+                  const dataset = tooltipItem.dataset.data;
+                  const value = dataset[tooltipItem.dataIndex];
+                  const percentage = ((value / totalEvents) * 100).toFixed(2);
+                  const label = tooltipItem.label; 
+                  return `${prefix}${value}`;
+                }
+              }
+            }
+          }
+        },
+  plugins: [
+    {
+      id: 'percentageLabels',
+      afterDraw(chart) {
+        const ctx = chart.ctx;
+        const chartArea = chart.chartArea;
+        chart.data.datasets[0].data.forEach((value, index) => {
+          const meta = chart.getDatasetMeta(0).data[index];
+          const percentage = ((value / totalEvents) * 100).toFixed(2);
+          const position = meta.tooltipPosition();
+          ctx.save();
+          ctx.fillStyle = 'black';
+          ctx.font = '12px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(`${percentage}%`, position.x, position.y - 10);
+          ctx.restore();
+        });
+      }
+    }
+  ]
+});
+}
+    // Handle tab-based file selection
+    let selectedFile = document.querySelector('.tab.active').dataset.file;
+  
+    function activateTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      selectedFile = tab.dataset.file;
+    }
+  
+    document.querySelectorAll('.tab').forEach(tab => {
+  // Listen for the click event on each tab
+  tab.addEventListener('click', () => {
+    // Remove 'active' class from all tabs
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+
+    // Add 'active' class to the clicked tab
+    tab.classList.add('active');
+
+    // Update the selected file based on the clicked tab's data attribute
+    selectedFile = tab.dataset.file;
+    document.getElementById('City').textContent = tab.textContent;
+
+    // Optional: Automatically trigger the file loading after selecting a tab
+    loadCSVFile(); // Automatically loads the file for the selected tab
+  });
+});
+
+  
+// Load selected CSV file
+function loadCSVFile(event) {
+  // Prevent default link behavior
+  event.preventDefault();
+
+  // Get the selected file and min/max years from the clicked link
+  const selectedLink = event.target;
+  const selectedFile = selectedLink.getAttribute('data-file');
+  const minYear = +selectedLink.getAttribute('data-min');
+  const maxYear = +selectedLink.getAttribute('data-max');
+
+  d3.csv(selectedFile)
+    .then(data => {
+      // Parse the CSV data
+      fullData = data.map(d => ({
+        ...d,
+        'e.latitude': +d['e.latitude'],
+        'e.longitude': +d['e.longitude'],
+        'e.startdate': +d['e.startdate']
+      }));
+
+      // Update the timeline slider with the new range
+      timelineSlider.noUiSlider.updateOptions({
+        range: {
+          min: minYear,
+          max: maxYear
+        }
+      });
+      timelineSlider.noUiSlider.set([minYear, maxYear]);
+
+      // Reset type filter to "all"
+      document.getElementById("type-filter").value = "all";
+
+      // Update visualization with the new data
+      filteredData = fullData;
+      filterData("all", [minYear, maxYear]);
+      updateVisualization(fullData);
+      updateTotalEvents(fullData.length);
+      updateSoloGroupCountForFilteredData(fullData);
+      updateSoloGroupCount(0, 0);
+      updatePieChart(fullData, 10);
+    })
+    .catch(error => {
+      console.error('Error loading file:', error);
+    });
+}
+
+// Add event listeners to all dropdown links
+document.querySelectorAll('.dropdown-content .tab').forEach(link => {
+  link.addEventListener('click', loadCSVFile);
+});
+
+    document.getElementById('loadFileButton').addEventListener('click', loadCSVFile);
+
+// Filter data by type and date range
+function filterData(type, dateRange) {
+  const [startYear, endYear] = dateRange.map(Number);
+
+  // Filter data based on type and year range
+  filteredData = fullData.filter(d => {
+    const year = d['e.startdate'];
+    const matchesType = type === "all" || d['e.type'].toLowerCase() === type.toLowerCase();
+    const matchesDate = year >= startYear && year <= endYear;
+    return matchesType && matchesDate;
+  });
+
+
+
+  // Count solo and group events based on the filtered data
+  const soloCount = filteredData.filter(d => d['e.type'].toLowerCase() === 'solo').length;
+  const groupCount = filteredData.filter(d => d['e.type'].toLowerCase() === 'group').length;
+  updateSoloGroupCount(soloCount, groupCount); // Update the displayed solo and group counts
+
+  
+  // Update the map, total events count, solo/group count, and pie chart
+  updateVisualization(filteredData);
+  updateTotalEvents(filteredData.length);
+  updateSoloGroupCount(soloCount, groupCount);
+  updatePieChart(filteredData, selectedTopN); // Update the pie chart with the selected top N painters
+}
+
+  // Set up filters
+  document.getElementById("type-filter").addEventListener("change", (event) => {
+    const dateRange = timelineSlider.noUiSlider.get();
+    filterData(event.target.value, dateRange);
+  });
+
+  timelineSlider.noUiSlider.on("update", (values) => {
+    const type = document.getElementById("type-filter").value;
+    filterData(type, values);
+    updateYearRangeDisplay(values); // Update the year range display
+  });
+  // Function to dynamically add year labels
+function addYearLabels(startYear, endYear, step = 5) {
+  // Remove any existing year labels to avoid duplication
+  d3.selectAll(".year-label").remove();
+
+  // Dynamically calculate the year labels based on the range and step
+  const yearLabelsData = d3.range(Math.floor(startYear / step) * step, endYear + step, step);
+
+  // Select the timeline container (assumes you have an SVG element for the timeline)
+
+
+}
+
+timelineSlider.noUiSlider.on("update", (values) => {
+  const startYear = Math.round(values[0]);
+  const endYear = Math.round(values[1]);
+
+  // Update year labels dynamically based on the new range
+  addYearLabels(startYear, endYear, 1); // Adjust the step as needed
+});
+
+  
+
+  // Set up the top painters button-based selection
+  document.querySelectorAll('.top-painter-button').forEach(button => {
+    button.addEventListener('click', (event) => {
+      const topN = event.target.getAttribute('data-top');
+      
+      // Remove the 'selected' attribute from all buttons
+      document.querySelectorAll('.top-painter-button').forEach(btn => {
+        btn.removeAttribute('selected');
+      });
+
+      // Add the 'selected' attribute to the clicked button
+      event.target.setAttribute('selected', '');
+
+      // Update the selected Top N painters value
+      selectedTopN = parseInt(topN, 'selected');
+
+      // Update the pie chart with the selected top N painters
+      updatePieChart(filteredData, selectedTopN);
+    });
+  });
+
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Birth and Death Year Chart</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* CSS Styles for Chart */
+
+        .chart-title {
+            text-align: center;
+            font-size: 44px;
+            margin: 20px 0;
+            font-weight: bold;
+            color: #333;
+        }
+        .tooltip {
+            position: absolute;
+            background-color: white;
+            border: 3px solid black;
+            padding: 8px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            font-size: 14px;
+            display: none;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .gender-box {
+    width: 25%; /* Takes up a quarter of the width */
+    height:30%;
+    margin: 20px 0;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #fff;
+    border-left: 2px solid #ddd;
+    position: fixed; /* Fixed position to stay on the right */
+    right: 20px; /* Places it 20px from the right edge */
+    top: 100px;
+    z-index: 10; /* Keeps it above other content */
+}
+        .gender-section {
+            margin: 10px 0;
+            text-align: center;
+        }
+        .gender-section h2 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .gender-grid {
+            display: flex;
+            gap: 10px;
+        }
+        .gender-box-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 70px;
+            height: 70px;
+            border: 2px solid black;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            font-size: 15px;
+            font-weight: bold;
+        }
+        
+        #info-table {
+  width: 100%;
+  margin: 40px 10% auto; /* Add 10% right margin */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+
+
+}
+#info-table h3 {
+  text-align: Right; 
+  margin-bottom: 10px;
+  color: #333;
+  margin-right: 1430px; /* Add 10px left margin */
+}
+        table.scrolldown {
+  width: 60%; 
+  border-spacing: 0;
+  border: 2px solid black;
+}
+
+/* To display the block as level element */
+table.scrolldown tbody,
+table.scrolldown thead {
+  display: block;
+}
+
+thead tr th,tbody td,
+thead th {
+  height: 40px;
+  line-height: 40px;
+  padding: 0 0px; 
+  text-align: left;
+  width: 200px;
+}
+
+table.scrolldown tbody {
+  height: 150px; /* Adjust this height as needed */
+  overflow-y: auto;
+
+}
+
+tbody tr {
+  height: 40px; 
+  line-height: 40px;
+  margin-bottom: 5px; /* Add space between rows */
+}
+
+tbody {
+  border-top: 2px solid black;
+}
+
+
+/* Styles for the nationality dropdown */
+#nationality-filter select {
+    padding: 8px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    appearance: none; /* Remove default dropdown arrow */
+    -webkit-appearance: none; /* For Safari */
+    -moz-appearance: none; /* For Firefox */
+    background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>"); /* Custom arrow */
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 1em;
+    padding-right: 30px; /* Adjust padding for arrow space */
+}
+
+#nationality-filter select:focus {
+    outline: none;
+    border-color: #66afe9;
+    box-shadow: 0 0 5px rgba(102, 175, 233, 0.6);
+}.country-filter {
+    margin-bottom: 20px; /* Add some space below the filter */
+    display: flex; /* Use flexbox for layout */
+    align-items: center; /* Vertically align label and select */
+}
+
+.country-filter label {
+    margin-right: 10px; /* Space between label and select */
+    font-weight: bold; /* Make the label bold */
+    font-size: 35px;
+}
+
+.country-filter select {
+    padding: 8px; /* Add some padding inside the select */
+    border: 1px solid #ccc; /* Add a border */
+    border-radius: 4px; /* Rounded corners */
+    font-size: 30px; /* Set a font size */
+    appearance: none; /* Remove default styling on some browsers */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: white; /* Set background color */
+    background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>"); /* Add a dropdown arrow */
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 1em;
+    padding-right: 30px; /* Make space for the dropdown arrow */
+    cursor: pointer; /* Change cursor to pointer on hover */
+}
+
+.country-filter select:focus {
+    outline: none; /* Remove default focus outline */
+    border-color: #007bff; /* Change border color on focus */
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* Add a focus box-shadow */
+}
+
+/* Optional: Style the dropdown options */
+.country-filter select option {
+    padding: 4px 8px;
+}
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    position: relative;
+    min-height: 100vh; /* Ensures body takes at least full viewport height */
+    overflow: hidden; /* Prevents scrollbars */
+}
+
+body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('image6.jpg'); /* Correct path! */
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.2; /* Adjust transparency */
+    z-index: -1; /* Ensures background stays behind content */
+}
+
+.small-label {
+    font-size: 0.8rem; /* Adjust font size */
+    color: gray; /* Optional: Set color for better readability */
+    font-style: italic; /* Optional: Add emphasis */
+    margin-top: 10px; /* Add spacing from above content */
+    display: block; /* Ensure it appears on a new line */
+}
+.next-page-button {
+    position: fixed; /* Fix button at the bottom-right corner */
+    bottom: 30px; /* Distance from the bottom */
+    right: 30px; /* Distance from the right */
+    background-color: #4CAF50; /* Green background */
+    color: white; /* White text */
+    border: none; /* Remove borders */
+    border-radius: 5px; /* Rounded corners */
+    padding: 20px 50px; /* Padding for button size */
+    font-size: 1rem; /* Font size */
+    cursor: pointer; /* Pointer cursor on hover */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Optional shadow for aesthetics */
+    transition: background-color 0.3s ease, transform 0.2s ease; /* Smooth transitions */
+}
+
+.next-page-button:hover {
+    background-color: #45a049; /* Slightly darker green on hover */
+    transform: scale(1.05); /* Slightly enlarge button on hover */
+}
+
+    </style>
+</head>
+<body>
+    <h1 class="chart-title">Biographical Data of Artists</h1>
+    <div id="chart"></div>
+    <div class="tooltip" id="tooltip"></div>
+
+    <div class="country-filter">
+        <label for="country-select">Select Nationality:</label>
+
+        <select id="country-select">
+            <option value="">All Nationality</option>
+            <option value="GB">GB</option>
+            <option value="NL">NL</option>
+            <option value="RU">RU</option>
+            <option value="CH">CH</option>
+            <option value="US">US</option>
+            <option value="FR">FR</option>
+            <option value="IT">IT</option>
+            <option value="DE">DE</option>
+            <option value="CZ">CZ</option>
+            <option value="HU">HU</option>
+            <option value="UA">UA</option>
+            <option value="RO">RO</option>
+            <option value="AU">AU</option>
+            <option value="BE">BE</option>
+            <option value="BY">BY</option>
+            <option value="AT">AT</option>
+            <option value="NO">NO</option>
+            <option value="SE">SE</option>
+            <option value="FI">FI</option>
+            <option value="ES">ES</option>
+            <option value="PL">PL</option>
+            <option value="BG">BG</option>
+            <option value="GE">GE</option>
+            <option value="MX">MX</option>
+            <option value="AM">AM</option>
+            <option value="IL">IL</option>
+            <option value="PT">PT</option>
+            <option value="DK">DK</option>
+            <option value="IE">IE</option>
+            <option value="HR">HR</option>
+            <option value="CL">CL</option>
+            <option value="SK">SK</option>
+            <option value="GR">GR</option>
+            <option value="LT">LT</option>
+            <option value="LV">LV</option>
+            <option value="CA">CA</option>
+            <option value="RS">RS</option>
+            <option value="TR">TR</option>
+            <option value="SI">SI</option>
+            <option value="EE">EE</option>
+            <option value="AR">AR</option>
+            <option value="ZA">ZA</option>
+            <option value="LU">LU</option>
+            <option value="NZ">NZ</option>
+            <option value="VE">VE</option>
+            <option value="GT">GT</option>
+            <option value="UY">UY</option>
+            <option value="SV">SV</option>
+            <option value="JP">JP</option>
+            <option value="BA">BA</option>
+            <option value="IN">IN</option>
+            <option value="ME">ME</option>
+            <!-- Add all the other countries here... -->
+        </select>
+    </div>
+    
+
+    <script>
+        d3.csv('artist_birth_death.csv').then(data => {
+            // Process data to store birth and death counts separately with genders
+            const processedData = data.map(d => ({
+                name: d.name,
+                birthYear: +d.birth_year,
+                deathYear: +d.death_year,
+                gender: d.gender,
+                country: d.nationality,
+                placeofbirth:d.placeofbirth,
+                placeofdeath:d.placeofdeath
+            }));
+
+            const countrySelect = d3.select("#country-select");
+    let selectedCountry = ""; // Keep track of the selected country
+
+    countrySelect.on("change", function() {
+        selectedCountry = d3.select(this).property("value");
+        updateChartAndTable(); // Call the update function when the dropdown changes
+    });
+
+    const updateTable = (startYear, endYear) => {
+    let filteredData = processedData.filter(d => {
+        const isBirthInRange = d.birthYear >= startYear && d.birthYear <= endYear;
+        const isDeathInRange = d.deathYear >= startYear && d.deathYear <= endYear;
+        return isBirthInRange || (d.deathYear !== undefined && d.deathYear !== null && isDeathInRange);
+    })
+        if (selectedCountry) {
+            filteredData = filteredData.filter(d => d.country === selectedCountry);
+        }
+    
+    // Get the table body element
+    const tableBody = d3.select("#table-body");
+
+    // Clear the existing table rows
+    tableBody.selectAll("tr").remove();
+
+    // Add a new row for each filtered record
+    filteredData.forEach(d => {
+        // Check if any field is "N/A", and skip adding the row if so
+        const birthYearDisplay = (d.birthYear >= startYear && d.birthYear <= endYear) ? d.birthYear : "N/A";
+        const deathYearDisplay = (d.deathYear !== undefined && d.deathYear !== null && d.deathYear >= startYear && d.deathYear <= endYear) ? d.deathYear : "N/A";
+
+        if (birthYearDisplay !== "N/A" && deathYearDisplay !== "N/A") {
+            tableBody.append("tr")
+                .html(`
+                    <td>${d.name || "Unknown"}</td>
+                    <td>${d.gender || "Unknown"}</td>
+                    <td>${d.country || "Unknown"}</td>
+                    <td>${birthYearDisplay}</td>
+                    <td>${deathYearDisplay}</td>
+        <td>${d.placeofbirth || "Unknown"}</td> <!-- Corrected -->
+        <td>${d.placeofdeath || "Unknown"}</td> <!-- Corrected -->
+                `);
+    }});
+};
+
+
+
+    
+            // Count the number of births and deaths per year, split by gender
+            const yearCounts = d3.rollups(
+                processedData.flatMap(d => [
+                    { year: d.birthYear, type: 'birth', gender: d.gender },
+                    { year: d.deathYear, type: 'death', gender: d.gender }
+                ]), 
+                v => ({
+                    total: v.length,
+                    male: v.filter(d => d.gender === 'M').length,
+                    female: v.filter(d => d.gender === 'F').length
+                }),
+                d => d.year,
+                d => d.type
+            ).map(([year, typeData]) => {
+                const birthData = typeData.find(d => d[0] === 'birth')?.[1] || { total: 0, male: 0, female: 0 };
+                const deathData = typeData.find(d => d[0] === 'death')?.[1] || { total: 0, male: 0, female: 0 };
+                return { year, birthData, deathData };
+            });
+    
+            const width = 1400;
+            const height = 400;
+            const margin = { top: 20, right: 20, bottom: 100, left: 50 };
+    
+            const svg = d3.select("#chart")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom);
+    
+            const chartGroup = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+    
+            const xScale = d3.scaleLinear()
+                .domain(d3.extent(yearCounts, d => d.year))
+                .range([0, width]);
+    
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(yearCounts, d => d.birthData.total + d.deathData.total)])
+                .range([height, 0]);
+    
+            const xAxis = d3.axisBottom(xScale).tickFormat(d3.format("d"));
+            const yAxis = d3.axisLeft(yScale);
+    
+            // X and Y Axis Labels
+            chartGroup.append("g")
+                .attr("class", "x-axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(xAxis);
+            chartGroup.append("text")
+                .attr("transform", `translate(${width / 2}, ${height + margin.bottom - 70})`)
+                .style("text-anchor", "middle")
+                .text("Year of Birth/ Death");
+    
+            chartGroup.append("g")
+                .attr("class", "y-axis")
+                .call(yAxis);
+            chartGroup.append("text")
+                .attr("transform", `rotate(-90)`)
+                .attr("y", -margin.left + 15)
+                .attr("x", -height / 2)
+                .style("text-anchor", "middle")
+                .text("Count");
+    
+            const timeline = svg.append("g")
+                .attr("class", "timeline")
+                .attr("transform", `translate(${margin.left},${margin.top + height + 60})`);
+    
+            timeline.append("line")
+                .attr("x1", 0)
+                .attr("x2", width)
+                .attr("y1", 0)
+                .attr("y2", 0)
+                .attr("stroke", "#ccc")
+                .attr("stroke-width", 15);
+    
+            let startYear = xScale.domain()[0];
+            let endYear = xScale.domain()[1];
+    
+            const handleWidth = 60;
+            const handleHeight = 30;
+    
+            // Add a line before the year 1900 on the x-axis
+            const xPosition1900 = xScale(1899); // Get the position for the year 1900 on the x-axis
+    
+            // Append a line at the desired position
+            chartGroup.append("line")
+                .attr("x1", xPosition1900)  // X position of the line (before 1900)
+                .attr("x2", xPosition1900)  // X position of the line (same as x1 for vertical line)
+                .attr("y1", 0)  // Y position to start the line from (top)
+                .attr("y2", height)  // Y position to end the line at (bottom)
+                .attr("stroke", "#000")  // Color of the line (black)
+                .attr("stroke-width", 2);  // Width of the line
+                const updateChartAndTable = () => {
+        updateChart();
+        updateTable(startYear, endYear);
+        updateGenderCounts(startYear, endYear);
+    };
+            // Declare variables for birth and death years
+            let birthYear = 0;
+            let deathYear = 0;
+    
+            // For the startHandle (Birth Year)
+            const startHandle = timeline.append("rect")
+                .attr("class", "handle")
+                .attr("x", xScale(startYear) - handleWidth / 2)
+                .attr("y", -15)
+                .attr("width", handleWidth)
+                .attr("height", handleHeight)
+                .style("fill", "#BFBFBF")
+                .style("stroke", "black")
+                .style("stroke-width", 4)
+                .call(d3.drag()
+                    .on("drag", function (event) {
+                        startYear = Math.min(endYear, Math.max(xScale.invert(event.x), xScale.domain()[0]));
+                        d3.select(this).attr("x", xScale(startYear) - handleWidth / 2);
+                        updateChart();
+                        updateTable(startYear, endYear);  // Update the table with filtered data
+                        updateGenderCounts(startYear, endYear);
+                        updateChartAndTable();
+    
+                        // Get the closest year data for birth
+                        const birthYearData = yearCounts.find(d => d.year === Math.round(startYear)); // Specific to birth year
+                        if (birthYearData) {
+                            birthYear = birthYearData.year; // Update birthYear variable
+                            d3.select("#birth-year").text(`Year: ${birthYear}`);
+                        }
+                    })
+                );
+    
+            // For the endHandle (Death Year)
+            const endHandle = timeline.append("rect")
+                .attr("class", "handle")
+                .attr("x", xScale(endYear) - handleWidth / 2)
+                .attr("y", -15)
+                .attr("width", handleWidth)
+                .attr("height", handleHeight)
+                .style("fill", "#BFBFBF")
+                .style("stroke", "black")
+                .style("stroke-width", 4)
+                .call(d3.drag()
+                    .on("drag", function (event) {
+                        endYear = Math.max(startYear, Math.min(xScale.invert(event.x), xScale.domain()[1]));
+                        d3.select(this).attr("x", xScale(endYear) - handleWidth / 2);
+                        updateChart();
+                        updateChartAndTable();
+                        updateTable(startYear, endYear);  // Update the table with filtered data
+                        updateGenderCounts(startYear, endYear);
+    
+                        // Get the closest year data for death
+                        const deathYearData = yearCounts.find(d => d.year === Math.round(endYear)); // Specific to death year
+                        if (deathYearData) {
+                            deathYear = deathYearData.year; // Update deathYear variable
+                            d3.select("#death-year").text(`Year: ${deathYear}`);
+                        }
+                    })
+                );
+    
+            const tooltip = d3.select("#tooltip");
+    
+            // Function to update the gender-based counts
+            const updateGenderCounts = (startYear, endYear) => {
+                const filteredData = yearCounts.filter(d => d.year >= startYear && d.year <= endYear);
+    
+                const birthStats = filteredData.reduce((acc, d) => ({
+                    total: acc.total + d.birthData.total,
+                    male: acc.male + d.birthData.male,
+                    female: acc.female + d.birthData.female,
+                }), { total: 0, male: 0, female: 0 });
+    
+                const deathStats = filteredData.reduce((acc, d) => ({
+                    total: acc.total + d.deathData.total,
+                    male: acc.male + d.deathData.male,
+                    female: acc.female + d.deathData.female,
+                }), { total: 0, male: 0, female: 0 });
+    
+                d3.select("#birth-total").text(`Total: ${birthStats.total}`);
+                d3.select("#birth-male").text(`Male: ${birthStats.male}`);
+                d3.select("#birth-female").text(`Female: ${birthStats.female}`);
+    
+                d3.select("#death-total").text(`Total: ${deathStats.total}`);
+                d3.select("#death-male").text(`Male: ${deathStats.male}`);
+                d3.select("#death-female").text(`Female: ${deathStats.female}`);
+            };
+    
+            // Function to update the chart based on the selected range
+            const updateChart = () => {
+                const filteredData = yearCounts.filter(d => d.year >= startYear && d.year <= endYear);
+    
+                // Dynamically update the yScale based on the filtered data
+                yScale.domain([0, d3.max(filteredData, d => d.birthData.total + d.deathData.total)]);
+    
+                chartGroup.select(".y-axis").transition().duration(800).call(yAxis);
+    
+                // Update the chart bars
+                const bars = chartGroup.selectAll(".bar")
+                    .data(filteredData, d => d.year);
+    
+                bars.exit().transition().duration(800).attr("y", yScale(0)).attr("height", 0).remove();
+    
+                const newBars = bars.enter()
+                    .append("rect")
+                    .attr("class", "bar")
+                    .attr("x", d => xScale(d.year) - 5)
+                    .attr("y", yScale(0))
+                    .attr("width", width / (endYear - startYear + 1) - 2)
+                    .attr("height", 0)
+                    .style("fill", "#964c5d") // Color for birth years
+                    .on("mouseover", (event, d) => {
+                        tooltip.style("display", "block")
+                            .html(`Year: ${d.year}<br>Total Count: ${d.birthData.total + d.deathData.total}<br>Births: ${d.birthData.total}<br>Deaths: ${d.deathData.total}`)
+                            .style("left", `${event.pageX + 10}px`)
+                            .style("top", `${event.pageY - 20}px`);
+                        const bar = d3.select(event.currentTarget);
+                        bar.style("fill", "orange"); // Change to hover color
+                    })
+                    .on("mousemove", (event) => {
+                        tooltip.style("left", `${event.pageX + 10}px`)
+                            .style("top", `${event.pageY - 20}px`);
+                    })
+                    .on("mouseout", (event) => {
+                        const bar = d3.select(event.currentTarget);
+                        bar.style("fill", "#964c5d"); // Restore original color
+                        tooltip.style("display", "none");
+                    })
+                    .on("click", (event, d) => {
+                        // Update gender counts or any other part of the UI
+                        d3.select("#birth-total").text(`Total: ${d.birthData.total}`);
+                        d3.select("#birth-male").text(`Male: ${d.birthData.male}`);
+                        d3.select("#birth-female").text(`Female: ${d.birthData.female}`);
+                        d3.select("#birth-year").text(`Year: ${d.year}`);
+    
+                        d3.select("#death-year").text(`Year: ${d.year}`);
+                        d3.select("#death-total").text(`Total: ${d.deathData.total}`);
+                        d3.select("#death-male").text(`Male: ${d.deathData.male}`);
+                        d3.select("#death-female").text(`Female: ${d.deathData.female}`);
+                    });
+    
+                newBars.merge(bars)
+                    .transition().duration(800)
+                    .attr("x", d => xScale(d.year) - 5)
+                    .attr("y", d => yScale(d.birthData.total + d.deathData.total))
+                    .attr("width", width / (endYear - startYear + 1) - 2)
+                    .attr("height", d => height - yScale(d.birthData.total + d.deathData.total));
+    
+                    updateTable(startYear, endYear);  // Update the table with filtered data
+                    updateGenderCounts(startYear, endYear);  // Update the table with filtered data
+
+            };
+    
+            timeline.selectAll(".year-label").remove();
+            const yearLabels = timeline.selectAll(".year-label")
+                .data(d3.range(Math.floor(startYear / 20) * 20, endYear + 20, 20))
+                .enter().append("text")
+                .attr("class", "year-label")
+                .attr("x", d => xScale(d))
+                .attr("y", 30)
+                .attr("text-anchor", "middle")
+                .text(d => d);
+    
+            updateTable(startYear, endYear);
+            updateChart(); // Initial chart update
+        });
+    </script>
+    
+
+    <div class="gender-box">
+        <div class="gender-section" id="birth-gender">
+            <h2>Total number of Births</h2>
+            <div class="gender-grid">
+                <div class="gender-box-item" id="birth-year">Year: 1810</div>
+                <div class="gender-box-item" id="birth-total">Total: 0</div>
+                <div class="gender-box-item" id="birth-male">Male: 0</div>
+                <div class="gender-box-item" id="birth-female">Female: 0</div>
+            </div>
+        </div>
+        <div class="gender-section" id="death-gender">
+            <h2>Total number of Deaths</h2>
+            <div class="gender-grid">
+                <div class="gender-box-item" id="death-year">Year: 2000</div>
+                <div class="gender-box-item" id="death-total">Total: 0</div>
+                <div class="gender-box-item" id="death-male">Male: 0</div>
+                <div class="gender-box-item" id="death-female">Female: 0</div>
+            </div>
+
+        </div>
+        <label class="small-label">
+            * The total count of births does not depend on the year selected for deaths and vice versa
+        </label>
+    </div>
+    <div id="info-table">
+        <h3>Name of Artiest and There Details</h3>
+        <table class="scrolldown">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Gender</th>
+                    <th>Nationality</th>
+                    <th>Year of Birth</th>
+                    <th>Year of Death</th>
+                    <th>Place of Birth</th>
+                    <th>Place of Death</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <!-- Rows will be dynamically added here -->
+            </tbody>
+        </table>
+    </div>
+    <button class="next-page-button" onclick="window.location.href='a2.html'">Let's Discover detailed events by different authors.</button>
+</body>
+</html>
